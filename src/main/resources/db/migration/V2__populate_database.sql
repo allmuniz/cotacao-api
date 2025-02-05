@@ -1,0 +1,1 @@
+INSERT INTO coin_entity (code) VALUES   ('BRL'), ('USD'),  ('EUR'), ('BTC'), ('ETH');
