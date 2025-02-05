@@ -20,10 +20,16 @@ public class WalletCoinEntity {
 
     private Double balance;// Saldo individual para cada Wallet + Coin
 
+    private Boolean notification;
+
+    private Double valueNotification;
+
     public WalletCoinEntity(WalletEntity wallet, CoinEntity coin, Double balance) {
         this.wallet = wallet;
         this.coin = coin;
         this.balance = balance;
+        this.notification = false;
+        this.valueNotification = 0.0;
     }
 
     public WalletCoinEntity() {}
@@ -58,5 +64,21 @@ public class WalletCoinEntity {
 
     public void setBalance(Double balance) {
         this.balance = balance;
+    }
+
+    public Boolean getNotification() {
+        return notification;
+    }
+
+    public void setNotification(Boolean notification) {
+        this.notification = notification;
+    }
+
+    public Double getValueNotification() {
+        return valueNotification;
+    }
+
+    public void setValueNotification(Double valueNotification) {
+        this.valueNotification = valueNotification;
     }
 }

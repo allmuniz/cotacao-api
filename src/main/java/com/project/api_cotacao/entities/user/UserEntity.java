@@ -24,7 +24,7 @@ public class UserEntity {
         this.email = dto.email();
         this.password= dto.password();
         this.principalBalance = 0.0;
-        this.wallet = new WalletEntity("BRL");
+        this.wallet = new WalletEntity();
     }
 
     public UserEntity() {

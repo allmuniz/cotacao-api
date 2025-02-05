@@ -1,5 +1,6 @@
 package com.project.api_cotacao.entities.wallet;
 
+import com.project.api_cotacao.entities.coin.CoinEntity;
 import jakarta.persistence.*;
 
 import java.util.List;
@@ -11,12 +12,14 @@ public class WalletEntity {
     @GeneratedValue(strategy = GenerationType.AUTO)
     private Long id;
 
-    private String principalCode;
+    @ManyToOne
+    @JoinColumn(name = "principal_coin_id")
+    private CoinEntity principalCode;
 
     @OneToMany(mappedBy = "wallet", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<WalletCoinEntity> walletCoins;
 
-    public WalletEntity(String principalCode) {
+    public WalletEntity(CoinEntity principalCode) {
         this.principalCode = principalCode;
     }
 
@@ -30,11 +33,11 @@ public class WalletEntity {
         this.id = id;
     }
 
-    public String getPrincipalCode() {
+    public CoinEntity getPrincipalCode() {
         return principalCode;
     }
 
-    public void setPrincipalCode(String principalCode) {
+    public void setPrincipalCode(CoinEntity principalCode) {
         this.principalCode = principalCode;
     }
 
