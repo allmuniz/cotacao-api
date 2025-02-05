@@ -1,5 +1,6 @@
 package com.project.api_cotacao.services;
 
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
@@ -20,5 +21,12 @@ public class CotacaoService {
             });
         }
         return cotacaoOriginal;
+    }
+
+
+
+    @Scheduled(fixedRate = 5000) // Executa a cada 5 segundos
+    public void executeTask() {
+        System.out.println("Tarefa executada a cada 5 segundos");
     }
 }
