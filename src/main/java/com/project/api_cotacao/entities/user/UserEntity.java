@@ -1,5 +1,6 @@
 package com.project.api_cotacao.entities.user;
 
+import com.project.api_cotacao.entities.coin.CoinEntity;
 import com.project.api_cotacao.entities.user.dtos.UserRequestDto;
 import com.project.api_cotacao.entities.wallet.WalletEntity;
 import jakarta.persistence.*;
@@ -19,12 +20,12 @@ public class UserEntity {
     @OneToOne(cascade = CascadeType.ALL)
     private WalletEntity wallet;
 
-    public UserEntity(UserRequestDto dto) {
+    public UserEntity(UserRequestDto dto, CoinEntity coin) {
         this.name = dto.name();
         this.email = dto.email();
         this.password= dto.password();
         this.principalBalance = 0.0;
-        this.wallet = new WalletEntity();
+        this.wallet = new WalletEntity(coin);
     }
 
     public UserEntity() {

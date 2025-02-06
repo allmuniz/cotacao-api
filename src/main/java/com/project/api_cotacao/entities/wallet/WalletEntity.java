@@ -3,6 +3,7 @@ package com.project.api_cotacao.entities.wallet;
 import com.project.api_cotacao.entities.coin.CoinEntity;
 import jakarta.persistence.*;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Entity
