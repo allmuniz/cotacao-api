@@ -1,5 +1,7 @@
 package com.project.api_cotacao.controllers;
 
+import com.project.api_cotacao.entities.wallet.dtos.ExchangeCurrencieResponseDto;
+import com.project.api_cotacao.entities.wallet.dtos.ExchangeCurrencieResquestDto;
 import com.project.api_cotacao.entities.wallet.dtos.WalletCoinRequestDto;
 import com.project.api_cotacao.entities.wallet.dtos.WalletCoinResponseDto;
 import com.project.api_cotacao.entities.wallet.enums.TransactionType;
@@ -24,5 +26,13 @@ public class WalletController {
             @RequestBody WalletCoinRequestDto dto) {
 
         return walletService.handleTransaction(walletId, dto, type);
+    }
+
+    @PostMapping("/exchange/{walletId}/{receiveCoinId}")
+    public ResponseEntity<ExchangeCurrencieResponseDto> exchangeWallet(
+            @PathVariable Long walletId,
+            @PathVariable Long receiveCoinId,
+            @RequestBody ExchangeCurrencieResquestDto dto) {
+        return walletService.exchangeCurrencies(walletId,receiveCoinId,dto);
     }
 }
