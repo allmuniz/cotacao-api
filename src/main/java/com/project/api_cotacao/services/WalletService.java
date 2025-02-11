@@ -36,8 +36,7 @@ public class WalletService {
         this.cotacaoService = cotacaoService;
     }
 
-    public ResponseEntity<WalletCoinResponseDto> handleTransaction(Long walletId, WalletCoinRequestDto dto, TransactionType type) {
-        WalletEntity wallet = getWalletById(walletId);
+    public ResponseEntity<WalletCoinResponseDto> handleTransaction(WalletEntity wallet, WalletCoinRequestDto dto, TransactionType type) {
         WalletCoinEntity coin = walletCoinService.getWalletCoinByWalletAndCoin(wallet, wallet.getPrincipalCode());
 
         boolean isDeposit = type == TransactionType.DEPOSIT;
@@ -46,15 +45,14 @@ public class WalletService {
     }
 
     public ResponseEntity<ExchangeCurrencieResponseDto> exchangeCurrencies(
-            Long walletId, Long receiveCoinId, ExchangeCurrencieResquestDto dto) {
+            WalletEntity wallet, Long receiveCoinId, ExchangeCurrencieResquestDto dto) {
 
-        WalletEntity wallet = getWalletById(walletId);
         CoinEntity receiveCoin = coinService.getCoinById(receiveCoinId);
 
         WalletCoinEntity sendWalletCoin = walletCoinService.getWalletCoinByWalletAndCoin(wallet, wallet.getPrincipalCode());
         WalletCoinEntity receiveWalletCoin = walletCoinService.getWalletCoinByWalletAndCoin(wallet, receiveCoin);
 
-        ExchangeDto cotacao = requestExchange(wallet.getPrincipalCode().getCode(), receiveCoin.getCode())
+        ExchangeDto cotacao = cotacaoService.requestExchange(wallet.getPrincipalCode().getCode(), receiveCoin.getCode())
                 .orElseThrow(() -> new ExchangeNotFoundException("Cotação não encontrada."));
 
         BigDecimal sendAmount = BigDecimal.valueOf(dto.sendAmount());
@@ -71,25 +69,15 @@ public class WalletService {
         return ResponseEntity.ok(buildExchangeResponse(newSendCoinDto, newReceiveCoinDto));
     }
 
+    public Double getPrincipalBalance(WalletEntity wallet) {
+        WalletCoinEntity principalCoin = walletCoinService.getWalletCoinByWalletAndCoin(wallet, wallet.getPrincipalCode());
+        return principalCoin.getBalance();
+    }
+
     private ExchangeCurrencieResponseDto buildExchangeResponse(WalletCoinResponseDto sendCoin, WalletCoinResponseDto receiveCoin) {
         return new ExchangeCurrencieResponseDto(sendCoin.code(), sendCoin.balance(), receiveCoin.code(), receiveCoin.balance());
     }
 
-    public Optional<ExchangeDto> requestExchange(String sender, String receiver) {
-        Map<String, Map<String, Object>> cotacaoOriginal = cotacaoService.getCotacao(sender + "-" + receiver);
-
-        if (cotacaoOriginal != null && !cotacaoOriginal.isEmpty()) {
-            Map<String, Object> valores = cotacaoOriginal.values().iterator().next();
-
-            if (valores.containsKey("bid") && valores.containsKey("ask")) {
-                BigDecimal bid = new BigDecimal(valores.get("bid").toString()).setScale(2, RoundingMode.HALF_UP);
-                BigDecimal ask = new BigDecimal(valores.get("ask").toString()).setScale(2, RoundingMode.HALF_UP);
-
-                return Optional.of(new ExchangeDto(bid.doubleValue(), ask.doubleValue()));
-            }
-        }
-        return Optional.empty();
-    }
 
     public WalletEntity getWalletById(Long id) {
     return walletRepository.findById(id).orElseThrow(() -> new WalletNotFoundException("Wallet not found"));
