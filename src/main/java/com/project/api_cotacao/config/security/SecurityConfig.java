@@ -33,11 +33,14 @@ public class SecurityConfig {
         http
                 .csrf(AbstractHttpConfigurer::disable) // Desativa CSRF para APIs REST
                 .authorizeHttpRequests(authorize -> authorize
-                        .requestMatchers("/public/**").permitAll()
-                        .requestMatchers("/wallet/**").hasAuthority("USER")// Permite acesso a login e criação de usuário
-                        .anyRequest().authenticated() // Todas as outras requisições precisam de autenticação
+                        .requestMatchers("/user/create").permitAll()
+                        .requestMatchers("/user/auth").permitAll()
+                        .requestMatchers("/wallet/**").hasAuthority("USER")
+                        .requestMatchers("/cotacao/**").hasAuthority("USER")
+                        .requestMatchers("/user/**").hasAuthority("USER")
+                        .anyRequest().authenticated()
                 )
-                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)) // JWT é stateless
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .addFilterBefore(new JwtAuthenticationFilter(tokenService, userDetailsService), UsernamePasswordAuthenticationFilter.class)
                 .logout(LogoutConfigurer::permitAll);
 

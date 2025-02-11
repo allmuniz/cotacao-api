@@ -16,6 +16,7 @@ CREATE TABLE user_entity (
     password VARCHAR(255) NOT NULL,
     principal_balance DOUBLE PRECISION,
     wallet_id BIGINT UNIQUE,
+    role VARCHAR(255) NOT NULL ,
     CONSTRAINT fk_user_wallet FOREIGN KEY (wallet_id) REFERENCES wallet_entity(id) ON DELETE CASCADE
 );
 
