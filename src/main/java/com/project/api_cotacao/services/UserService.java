@@ -5,6 +5,7 @@ import com.project.api_cotacao.entities.user.UserEntity;
 import com.project.api_cotacao.entities.user.dtos.UserRequestDto;
 import com.project.api_cotacao.entities.user.dtos.UserResponseAllDto;
 import com.project.api_cotacao.entities.user.exceptions.UserFoundException;
+import com.project.api_cotacao.entities.user.exceptions.UserNotFoundException;
 import com.project.api_cotacao.repositories.UserRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -43,6 +44,25 @@ public class UserService {
         this.walletCoinService.createWalletCoin(newUser.getWallet(), coin);
 
         return ResponseEntity.status(HttpStatus.CREATED).body(UserResponseAllDto.fromEntity(newUser));
+    }
+
+    public ResponseEntity<UserResponseAllDto> findUser (Long userId) {
+        UserEntity user = getUserById(userId);
+        return ResponseEntity.ok(UserResponseAllDto.fromEntity(user));
+    }
+
+    public void updateUser(UserEntity user, UserRequestDto request) {
+        String passwordEncoder = this.passwordEncoder.encode(request.password());
+
+        user.setName(request.name());
+        user.setEmail(request.email());
+        user.setPassword(passwordEncoder);
+
+        userRepository.save(user);
+    }
+
+    public void deleteUser(UserEntity user) {
+        userRepository.delete(user);
     }
 
     public UserEntity getUserById(Long id) {
