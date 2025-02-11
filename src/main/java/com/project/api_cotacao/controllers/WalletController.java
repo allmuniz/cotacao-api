@@ -1,5 +1,6 @@
 package com.project.api_cotacao.controllers;
 
+import com.project.api_cotacao.entities.user.UserEntity;
 import com.project.api_cotacao.entities.wallet.dtos.ExchangeCurrencieResponseDto;
 import com.project.api_cotacao.entities.wallet.dtos.ExchangeCurrencieResquestDto;
 import com.project.api_cotacao.entities.wallet.dtos.WalletCoinRequestDto;
@@ -7,6 +8,7 @@ import com.project.api_cotacao.entities.wallet.dtos.WalletCoinResponseDto;
 import com.project.api_cotacao.entities.wallet.enums.TransactionType;
 import com.project.api_cotacao.services.WalletService;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -19,20 +21,25 @@ public class WalletController {
         this.walletService = walletService;
     }
 
-    @PutMapping("/{type}/{walletId}")
+    @PutMapping("/{type}")
     public ResponseEntity<WalletCoinResponseDto> handleTransaction(
-            @PathVariable Long walletId,
+            @AuthenticationPrincipal UserEntity user,
             @PathVariable TransactionType type,
             @RequestBody WalletCoinRequestDto dto) {
 
-        return walletService.handleTransaction(walletId, dto, type);
+        return walletService.handleTransaction(user.getWallet(), dto, type);
     }
 
-    @PostMapping("/exchange/{walletId}/{receiveCoinId}")
+    @PostMapping("/exchange/{receiveCoinId}")
     public ResponseEntity<ExchangeCurrencieResponseDto> exchangeWallet(
-            @PathVariable Long walletId,
+            @AuthenticationPrincipal UserEntity user,
             @PathVariable Long receiveCoinId,
             @RequestBody ExchangeCurrencieResquestDto dto) {
-        return walletService.exchangeCurrencies(walletId,receiveCoinId,dto);
+        return walletService.exchangeCurrencies(user.getWallet(),receiveCoinId,dto);
+    }
+
+    @GetMapping("/balance")
+    public Double getPrincipalBalance(@AuthenticationPrincipal UserEntity user) {
+        return walletService.getPrincipalBalance(user.getWallet());
     }
 }
