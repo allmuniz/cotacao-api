@@ -33,9 +33,9 @@ public class UserController {
         return userService.createUser(request);
     }
 
-    @GetMapping("/{userId}")
-    public ResponseEntity<UserResponseAllDto> findUser(@PathVariable Long userId) {
-        return userService.findUser(userId);
+    @GetMapping("/")
+    public ResponseEntity<UserResponseAllDto> findUser(@AuthenticationPrincipal UserEntity user) {
+        return userService.findUser(user.getId());
     }
 
     @PutMapping("/update")
