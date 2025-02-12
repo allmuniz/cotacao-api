@@ -41,6 +41,10 @@ public class CoinService {
         return coinRepository.findAllByUserId(user.getId());
     }
 
+    public List<CoinEntity> getAllCoinsToUserAndNotification(UserEntity user) {
+        return coinRepository.findAllByUserAndNotification(user, true);
+    }
+
     public CoinEntity getCoinByWalletAndCode(WalletEntity wallet, String code) {
         return coinRepository.findByWalletAndCode(wallet, code);
     }

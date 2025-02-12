@@ -1,7 +1,9 @@
 package com.project.api_cotacao.services;
 
+import com.project.api_cotacao.entities.coin.CoinEntity;
 import com.project.api_cotacao.entities.exchange.dtos.ExchangeDto;
 import com.project.api_cotacao.entities.exchange.exceptions.ExchangeNotFoundException;
+import com.project.api_cotacao.entities.user.UserEntity;
 import com.project.api_cotacao.producer.EmailProducer;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -9,6 +11,7 @@ import org.springframework.web.client.RestTemplate;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -17,9 +20,13 @@ public class CotacaoService {
 
     private final RestTemplate restTemplate = new RestTemplate();
     private final EmailProducer emailProducer;
+    private final CoinService coinService;
+    private final UserService userService;
 
-    public CotacaoService(EmailProducer emailProducer) {
+    public CotacaoService(EmailProducer emailProducer, CoinService coinService, UserService userService) {
         this.emailProducer = emailProducer;
+        this.coinService = coinService;
+        this.userService = userService;
     }
 
     public Map<String, Map<String, Object>> getCotacao(String moedas) {
@@ -50,14 +57,33 @@ public class CotacaoService {
         return Optional.empty();
     }
 
-    /*@Scheduled(fixedRate = 5000) // Executa a cada 5 segundos*/
+    @Scheduled(cron = "0 0/1 * * * ?") // A cada 1 minutos
+    public void verifyAndNotification(){
+        List<UserEntity>users = userService.getAllUsers();
+        users.forEach(user -> {
+            CoinEntity princialCoin = coinService.getPrincipalCoin(user.getWallet());
+            List<CoinEntity> coins = coinService.getAllCoinsToUserAndNotification(user);
+            coins.forEach(coin -> {
+                ExchangeDto exchange = requestExchange(coin.getCode(), princialCoin.getCode())
+                        .orElseThrow(() -> new ExchangeNotFoundException("Cotação não encontrada."));
+
+                    System.out.println("O usuário é: " + user.getName()+ " a coin pricipal é: " + princialCoin.getCode() + " a que esta sendo verificada é: " + coin.getCode());
+                if (coin.getValueNotification() <= exchange.bid() ){
+                    emailProducer.sendMessage(user.getEmail(), coin.getCode(), coin.getValueNotification());
+                    coin.setNotification(false);
+                    coinService.saveCoin(coin);
+                }
+            });
+        });
+    }
+
     public void executeTask() {
         ExchangeDto cotacao = requestExchange("BRL", "USD")
                 .orElseThrow(() -> new ExchangeNotFoundException("Cotação não encontrada."));
         System.out.println("1 BRL equivale a: "+cotacao.bid()+" USD");
 
         if (cotacao.bid() <= 1){
-            emailProducer.checkConditionAndSendMessage("contajogosmuniz@hotmail.com", "USD", cotacao.bid());
+            emailProducer.sendMessage("contajogosmuniz@hotmail.com", "USD", cotacao.bid());
         }
     }
 }
