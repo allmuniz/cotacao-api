@@ -38,6 +38,11 @@ public class SecurityConfig {
                         .requestMatchers("/wallet/**").hasAuthority("USER")
                         .requestMatchers("/cotacao/**").hasAuthority("USER")
                         .requestMatchers("/user/**").hasAuthority("USER")
+                        .requestMatchers(
+                                "/v3/api-docs/**",
+                                "/swagger-ui/**",
+                                "/swagger-ui.html"
+                        ).permitAll()
                         .anyRequest().authenticated()
                 )
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
