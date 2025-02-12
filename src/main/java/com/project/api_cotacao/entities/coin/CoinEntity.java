@@ -7,7 +7,7 @@ import jakarta.persistence.*;
 public class CoinEntity {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     private String code;
