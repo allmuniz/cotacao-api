@@ -1,10 +1,7 @@
 package com.project.api_cotacao.entities.wallet;
 
-import com.project.api_cotacao.entities.coin.CoinEntity;
+import com.project.api_cotacao.entities.user.UserEntity;
 import jakarta.persistence.*;
-
-import java.util.ArrayList;
-import java.util.List;
 
 @Entity
 public class WalletEntity {
@@ -13,15 +10,12 @@ public class WalletEntity {
     @GeneratedValue(strategy = GenerationType.AUTO)
     private Long id;
 
-    @ManyToOne
-    @JoinColumn(name = "principal_coin_id")
-    private CoinEntity principalCode;
+    @OneToOne(cascade = CascadeType.ALL)
+    @JoinColumn(name = "user_id")
+    private UserEntity user;
 
-    @OneToMany(mappedBy = "wallet", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<WalletCoinEntity> walletCoins;
-
-    public WalletEntity(CoinEntity principalCode) {
-        this.principalCode = principalCode;
+    public WalletEntity(UserEntity user) {
+        this.user = user;
     }
 
     public WalletEntity() {}
@@ -34,19 +28,19 @@ public class WalletEntity {
         this.id = id;
     }
 
-    public CoinEntity getPrincipalCode() {
-        return principalCode;
+    public UserEntity getUser() {
+        return user;
     }
 
-    public void setPrincipalCode(CoinEntity principalCode) {
-        this.principalCode = principalCode;
+    public void setUser(UserEntity user) {
+        this.user = user;
     }
 
-    public List<WalletCoinEntity> getWalletCoins() {
-        return walletCoins;
+    /*public List<CoinEntity> getCoins() {
+        return coins;
     }
 
-    public void setWalletCoins(List<WalletCoinEntity> walletCoins) {
-        this.walletCoins = walletCoins;
-    }
+    public void setCoins(List<CoinEntity> coins) {
+        this.coins = coins;
+    }*/
 }

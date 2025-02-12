@@ -1,6 +1,5 @@
 package com.project.api_cotacao.entities.user;
 
-import com.project.api_cotacao.entities.coin.CoinEntity;
 import com.project.api_cotacao.entities.user.dtos.UserRequestDto;
 import com.project.api_cotacao.entities.wallet.WalletEntity;
 import jakarta.persistence.*;
@@ -10,7 +9,6 @@ import org.springframework.security.core.userdetails.UserDetails;
 
 import java.util.Collection;
 import java.util.Collections;
-import java.util.List;
 
 @Entity
 public class UserEntity implements UserDetails {
@@ -22,19 +20,16 @@ public class UserEntity implements UserDetails {
     private String name;
     private String email;
     private String password;
-    private Double principalBalance;
 
-    @OneToOne(cascade = CascadeType.ALL)
+    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL)
     private WalletEntity wallet;
 
     private String role;
 
-    public UserEntity(UserRequestDto dto, String passwordEncoder, CoinEntity coin) {
+    public UserEntity(UserRequestDto dto, String passwordEncoder) {
         this.name = dto.name();
         this.email = dto.email();
         this.password= passwordEncoder;
-        this.principalBalance = 0.0;
-        this.wallet = new WalletEntity(coin);
         this.role = "USER";
     }
 
@@ -101,14 +96,6 @@ public class UserEntity implements UserDetails {
 
     public void setPassword(String password) {
         this.password = password;
-    }
-
-    public Double getPrincipalBalance() {
-        return principalBalance;
-    }
-
-    public void setPrincipalBalance(Double principalBalance) {
-        this.principalBalance = principalBalance;
     }
 
     public WalletEntity getWallet() {
