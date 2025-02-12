@@ -3,7 +3,6 @@ package com.project.api_cotacao.producer;
 import com.project.api_cotacao.config.rabbitMq.RabbitMQConfig;
 import com.project.api_cotacao.producer.dtos.EmailMessage;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -15,8 +14,7 @@ public class EmailProducer {
         this.rabbitTemplate = rabbitTemplate;
     }
 
-    /*@Scheduled(fixedRate = 5000 * 2) // Executa a cada 1 minuto*/
-    public void checkConditionAndSendMessage(String emailUser, String code, Double bid) {
+    public void sendMessage(String emailUser, String code, Double bid) {
 
         String message = "A moeda " + code +" esta com a cotação abaixo de: " + bid;
 
