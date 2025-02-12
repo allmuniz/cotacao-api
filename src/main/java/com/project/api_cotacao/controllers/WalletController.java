@@ -1,10 +1,9 @@
 package com.project.api_cotacao.controllers;
 
+import com.project.api_cotacao.entities.coin.dtos.WalletCoinDto;
+import com.project.api_cotacao.entities.exchange.dtos.ExchangeCurrencieResponseDto;
+import com.project.api_cotacao.entities.exchange.dtos.ExchangeCurrencieResquestDto;
 import com.project.api_cotacao.entities.user.UserEntity;
-import com.project.api_cotacao.entities.wallet.dtos.ExchangeCurrencieResponseDto;
-import com.project.api_cotacao.entities.wallet.dtos.ExchangeCurrencieResquestDto;
-import com.project.api_cotacao.entities.wallet.dtos.WalletCoinRequestDto;
-import com.project.api_cotacao.entities.wallet.dtos.WalletCoinResponseDto;
 import com.project.api_cotacao.entities.wallet.enums.TransactionType;
 import com.project.api_cotacao.services.WalletService;
 import org.springframework.http.ResponseEntity;
@@ -22,20 +21,19 @@ public class WalletController {
     }
 
     @PutMapping("/{type}")
-    public ResponseEntity<WalletCoinResponseDto> handleTransaction(
+    public ResponseEntity<WalletCoinDto> handleTransaction(
             @AuthenticationPrincipal UserEntity user,
             @PathVariable TransactionType type,
-            @RequestBody WalletCoinRequestDto dto) {
+            @RequestBody WalletCoinDto dto) {
 
         return walletService.handleTransaction(user.getWallet(), dto, type);
     }
 
-    @PostMapping("/exchange/{receiveCoinId}")
+    @PostMapping("/exchange")
     public ResponseEntity<ExchangeCurrencieResponseDto> exchangeWallet(
             @AuthenticationPrincipal UserEntity user,
-            @PathVariable Long receiveCoinId,
             @RequestBody ExchangeCurrencieResquestDto dto) {
-        return walletService.exchangeCurrencies(user.getWallet(),receiveCoinId,dto);
+        return walletService.exchangeCurrencies(user.getWallet(),dto);
     }
 
     @GetMapping("/balance")
