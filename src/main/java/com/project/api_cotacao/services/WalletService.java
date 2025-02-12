@@ -1,83 +1,110 @@
 package com.project.api_cotacao.services;
 
 import com.project.api_cotacao.entities.coin.CoinEntity;
+import com.project.api_cotacao.entities.coin.dtos.WalletCoinDto;
+import com.project.api_cotacao.entities.exchange.dtos.ExchangeCurrencieResponseDto;
+import com.project.api_cotacao.entities.exchange.dtos.ExchangeCurrencieResquestDto;
 import com.project.api_cotacao.entities.exchange.dtos.ExchangeDto;
 import com.project.api_cotacao.entities.exchange.exceptions.ExchangeNotFoundException;
-import com.project.api_cotacao.entities.wallet.WalletCoinEntity;
+import com.project.api_cotacao.entities.user.UserEntity;
 import com.project.api_cotacao.entities.wallet.WalletEntity;
-import com.project.api_cotacao.entities.wallet.dtos.ExchangeCurrencieResponseDto;
-import com.project.api_cotacao.entities.wallet.dtos.ExchangeCurrencieResquestDto;
-import com.project.api_cotacao.entities.wallet.dtos.WalletCoinRequestDto;
-import com.project.api_cotacao.entities.wallet.dtos.WalletCoinResponseDto;
 import com.project.api_cotacao.entities.wallet.enums.TransactionType;
+import com.project.api_cotacao.entities.wallet.exceptions.AmountDepositedException;
 import com.project.api_cotacao.entities.wallet.exceptions.WalletNotFoundException;
 import com.project.api_cotacao.repositories.WalletRepository;
-import org.springframework.context.annotation.Lazy;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.util.Map;
-import java.util.Optional;
 
 @Service
 public class WalletService {
 
     private final WalletRepository walletRepository;
-    private final WalletCoinService walletCoinService;
     private final CoinService coinService;
     private final CotacaoService cotacaoService;
 
-    public WalletService(WalletRepository walletRepository, @Lazy WalletCoinService walletCoinService, CoinService coinService, CotacaoService cotacaoService) {
+    public WalletService(WalletRepository walletRepository, CoinService coinService, CotacaoService cotacaoService) {
         this.walletRepository = walletRepository;
-        this.walletCoinService = walletCoinService;
         this.coinService = coinService;
         this.cotacaoService = cotacaoService;
     }
 
-    public ResponseEntity<WalletCoinResponseDto> handleTransaction(WalletEntity wallet, WalletCoinRequestDto dto, TransactionType type) {
-        WalletCoinEntity coin = walletCoinService.getWalletCoinByWalletAndCoin(wallet, wallet.getPrincipalCode());
+    public WalletEntity createWallet(UserEntity user) {
+        WalletEntity wallet = new WalletEntity(user);
+        walletRepository.save(wallet);
 
+        coinService.createCoin("BRL", wallet, true);
+        return wallet;
+    }
+
+    public ResponseEntity<WalletCoinDto> handleTransaction(WalletEntity wallet, WalletCoinDto dto, TransactionType type) {
+
+        CoinEntity coin = coinService.getPrincipalCoin(wallet);
         boolean isDeposit = type == TransactionType.DEPOSIT;
 
-        return ResponseEntity.ok().body(walletCoinService.updateWalletCoin(coin, dto.balance(), isDeposit));
+        return ResponseEntity.ok().body(updateCoin(wallet, dto.code(), dto.balance(), isDeposit));
     }
 
     public ResponseEntity<ExchangeCurrencieResponseDto> exchangeCurrencies(
-            WalletEntity wallet, Long receiveCoinId, ExchangeCurrencieResquestDto dto) {
+            WalletEntity wallet, ExchangeCurrencieResquestDto dto) {
 
-        CoinEntity receiveCoin = coinService.getCoinById(receiveCoinId);
+        CoinEntity sendCoin = coinService.getPrincipalCoin(wallet);
+        CoinEntity receiveCoin = coinService.getCoinByWalletAndCode(wallet, dto.code());
+        if (receiveCoin == null) receiveCoin = coinService.createCoin(dto.code(), wallet, false);
 
-        WalletCoinEntity sendWalletCoin = walletCoinService.getWalletCoinByWalletAndCoin(wallet, wallet.getPrincipalCode());
-        WalletCoinEntity receiveWalletCoin = walletCoinService.getWalletCoinByWalletAndCoin(wallet, receiveCoin);
-
-        ExchangeDto cotacao = cotacaoService.requestExchange(wallet.getPrincipalCode().getCode(), receiveCoin.getCode())
+        ExchangeDto cotacao = cotacaoService.requestExchange(sendCoin.getCode(), receiveCoin.getCode())
                 .orElseThrow(() -> new ExchangeNotFoundException("Cotação não encontrada."));
 
         BigDecimal sendAmount = BigDecimal.valueOf(dto.sendAmount());
         BigDecimal receiveAmount = sendAmount.multiply(BigDecimal.valueOf(cotacao.bid())).setScale(2, RoundingMode.HALF_UP);
 
-        WalletCoinResponseDto newSendCoinDto = walletCoinService.updateWalletCoin(sendWalletCoin, dto.sendAmount(), false);
-
-        if (receiveWalletCoin == null) {
-            receiveWalletCoin = walletCoinService.createWalletCoin(wallet, receiveCoin);
-        }
-
-        WalletCoinResponseDto newReceiveCoinDto = walletCoinService.updateWalletCoin(receiveWalletCoin, receiveAmount.doubleValue(), true);
+        WalletCoinDto newSendCoinDto = updateCoin(wallet, sendCoin.getCode(), dto.sendAmount(), false);
+        WalletCoinDto newReceiveCoinDto = updateCoin(wallet, receiveCoin.getCode(), receiveAmount.doubleValue(), true);
 
         return ResponseEntity.ok(buildExchangeResponse(newSendCoinDto, newReceiveCoinDto));
     }
 
     public Double getPrincipalBalance(WalletEntity wallet) {
-        WalletCoinEntity principalCoin = walletCoinService.getWalletCoinByWalletAndCoin(wallet, wallet.getPrincipalCode());
+        CoinEntity principalCoin = coinService.getPrincipalCoin(wallet);
         return principalCoin.getBalance();
     }
 
-    private ExchangeCurrencieResponseDto buildExchangeResponse(WalletCoinResponseDto sendCoin, WalletCoinResponseDto receiveCoin) {
-        return new ExchangeCurrencieResponseDto(sendCoin.code(), sendCoin.balance(), receiveCoin.code(), receiveCoin.balance());
+    public ResponseEntity<WalletCoinDto> updatePrincipalCoin(WalletEntity wallet, String code) {
+        CoinEntity coin = coinService.getPrincipalCoin(wallet);
+        coin.setPrincipal(false);
+        coinService.saveCoin(coin);
+
+        CoinEntity newPrincipalCoin = coinService.getCoinByWalletAndCode(wallet, code);
+        coin.setPrincipal(true);
+        coinService.saveCoin(newPrincipalCoin);
+        return ResponseEntity.ok().body(new WalletCoinDto(newPrincipalCoin.getCode(), newPrincipalCoin.getBalance()));
     }
 
+    public WalletCoinDto updateCoin(WalletEntity wallet, String code, Double value, Boolean isDeposit) {
+        verificaValue(value);
+
+        CoinEntity coin = coinService.getCoinByWalletAndCode(wallet, code);
+
+        double newBalance = isDeposit ? coin.getBalance() + value : coin.getBalance() - value;
+        coin.setBalance(newBalance);
+
+        CoinEntity updatedCoin = coinService.saveCoin(coin);
+
+        return new WalletCoinDto(updatedCoin.getCode(), updatedCoin.getBalance());
+    }
+
+    public void verificaValue(Double value){
+        if (value <= 0) {
+            throw new AmountDepositedException("Invalid deposited amount");
+        }
+    }
+
+    private ExchangeCurrencieResponseDto buildExchangeResponse(WalletCoinDto sendCoin, WalletCoinDto receiveCoin) {
+        return new ExchangeCurrencieResponseDto(sendCoin.code(), sendCoin.balance(),
+                receiveCoin.code(), receiveCoin.balance());
+    }
 
     public WalletEntity getWalletById(Long id) {
     return walletRepository.findById(id).orElseThrow(() -> new WalletNotFoundException("Wallet not found"));

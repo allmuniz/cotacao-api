@@ -5,27 +5,28 @@ import com.project.api_cotacao.entities.user.UserEntity;
 import com.project.api_cotacao.entities.user.dtos.UserRequestDto;
 import com.project.api_cotacao.entities.user.dtos.UserResponseAllDto;
 import com.project.api_cotacao.entities.user.exceptions.UserFoundException;
-import com.project.api_cotacao.entities.user.exceptions.UserNotFoundException;
+import com.project.api_cotacao.entities.wallet.WalletEntity;
 import com.project.api_cotacao.repositories.UserRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.Optional;
 
 @Service
 public class UserService {
 
     private final UserRepository userRepository;
+    private final WalletService walletService;
     private final CoinService coinService;
-    private final WalletCoinService walletCoinService;
     private final PasswordEncoder passwordEncoder;
 
-    public UserService(UserRepository userRepository, CoinService coinService, WalletCoinService walletCoinService, PasswordEncoder passwordEncoder) {
+    public UserService(UserRepository userRepository, WalletService walletService, CoinService coinService, PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
+        this.walletService = walletService;
         this.coinService = coinService;
-        this.walletCoinService = walletCoinService;
         this.passwordEncoder = passwordEncoder;
     }
 
@@ -35,20 +36,22 @@ public class UserService {
             throw new UserFoundException("User " + request.email() + " already exists");
         }
 
-        CoinEntity coin = this.coinService.getCoinById(1L);
         String passwordEncoder = this.passwordEncoder.encode(request.password());
+        UserEntity newUser = new UserEntity(request, passwordEncoder);
 
-        UserEntity newUser = new UserEntity(request, passwordEncoder, coin);
         userRepository.save(newUser);
 
-        this.walletCoinService.createWalletCoin(newUser.getWallet(), coin);
+        WalletEntity wallet = this.walletService.createWallet(newUser);
 
-        return ResponseEntity.status(HttpStatus.CREATED).body(UserResponseAllDto.fromEntity(newUser));
+        List<CoinEntity> coins = coinService.getAllCoinsToWallet(wallet);
+
+        return ResponseEntity.status(HttpStatus.CREATED).body(UserResponseAllDto.fromEntity(newUser, coins));
     }
 
     public ResponseEntity<UserResponseAllDto> findUser (Long userId) {
         UserEntity user = getUserById(userId);
-        return ResponseEntity.ok(UserResponseAllDto.fromEntity(user));
+        List<CoinEntity> coins = coinService.getAllCoinsToUser(user);
+        return ResponseEntity.ok(UserResponseAllDto.fromEntity(user, coins));
     }
 
     public void updateUser(UserEntity user, UserRequestDto request) {

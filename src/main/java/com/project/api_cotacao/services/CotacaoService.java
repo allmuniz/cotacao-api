@@ -50,7 +50,7 @@ public class CotacaoService {
         return Optional.empty();
     }
 
-    @Scheduled(fixedRate = 5000) // Executa a cada 5 segundos
+    /*@Scheduled(fixedRate = 5000) // Executa a cada 5 segundos*/
     public void executeTask() {
         ExchangeDto cotacao = requestExchange("BRL", "USD")
                 .orElseThrow(() -> new ExchangeNotFoundException("Cotação não encontrada."));
